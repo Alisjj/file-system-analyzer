@@ -1,7 +1,7 @@
 import os
 import hashlib
 from pathlib import Path
-from datetime import timezone, datetime
+from datetime import timezone, datetime, timedelta
 
 text = ['textFiles', 'doc', 'docx', 'docm', 'odt', 'pdf', 'txt', 'rtf', 'pages', 'pfb', 'mobi', 'chm', 'tex', 'bib', 'dvi', 'abw', 'text', 'epub', 'nfo', 'log', 'log1', 'log2', 'wks', 'wps', 'wpd', 'emlx', 'utf8', 'ichat', 'asc', 'ott', 'fra', 'opf']
 image = ['imageFiles', 'img','jpg', 'jpeg', 'png', 'png0', 'ai', 'cr2', 'ico', 'icon', 'jfif', 'tiff', 'tif', 'gif', 'bmp', 'odg', 'djvu', 'odg', 'ai', 'fla', 'pic', 'ps', 'psb', 'svg', 'dds', 'hdr', 'ithmb', 'rds', 'heic', 'aae', 'apalbum', 'apfolder', 'xmp', 'dng', 'px', 'catalog', 'ita', 'photoscachefile', 'visual', 'shape', 'appicon', 'icns']
@@ -52,12 +52,18 @@ def get_meta_data(file):
         "type": path.suffix[1:] or "unknown",  # Remove leading dot from suffix
         "extension": path.suffix,
         "created_time": datetime.fromtimestamp(int(stat.st_ctime)),
-        "modified_time": int(stat.st_mtime),
-        "accessed_time": int(stat.st_atime),
+        "modified_time": datetime.fromtimestamp(int(stat.st_mtime)),
+        "accessed_time": datetime.fromtimestamp(int(stat.st_atime)),
         "owner": stat.st_uid,  # You might want to convert this to a username
         "permissions": oct(stat.st_mode)[-3:],  # This is simplified
         "hash": hashlib.md5(path.read_bytes()).hexdigest() if path.is_file else None,
     }
+
+
+def is_recent(timestamp):
+    today = datetime.now()
+    return today - timestamp < timedelta(days=7)
+
 
 def categorize(extension):
 	for category in allcats:
@@ -73,9 +79,9 @@ def categorize_file_type(file_list):
     for file in file_list:
         cat = categorize(file["type"])
         if not cat in category:
-            category[cat] = [file]
+            category[cat] = [file["path"]]
             continue
-        category[cat].append(file)
+        category[cat].append(file["path"])
     return category
 
 def find_duplicates(file_list):
@@ -87,3 +93,16 @@ def find_duplicates(file_list):
             continue
         duplicates[file["hash"]].append(file["path"])
     return duplicates
+
+
+def search_file(dir, name=None, type=None, size=None, date=None):
+    files = traverse_dir(dir)
+    result = []
+    for file in files:
+        if name and name == file["name"]:
+            result.append(file["path"])
+
+        if type and type == file["type"]:
+            result.append(file["type"])
+
+    return result

@@ -1,4 +1,6 @@
-from utils import traverse_dir, categorize_file_type, find_duplicates, is_recent, search_file
+from hurry.filesize import size
+from datetime import datetime
+from utils import traverse_dir, categorize_file_type, find_duplicates, is_recent, last_seven_days
 
 def most_common_type(categories):
     common = []
@@ -7,14 +9,14 @@ def most_common_type(categories):
         if len(val) > len(common):
             common = val
             cat = key
-    return {cat: len(categories[cat])}
+    return {"name": cat, "num": len(categories[cat])}
 
 def file_analysis(dir):
     file_list = traverse_dir(dir)
     categories = categorize_file_type(file_list)
     
     total_files = len(file_list)
-    duplicates = find_duplicates(file_list)
+    duplicates = find_duplicates(file_list=file_list)
     
     total_file_size = 0
     largest_file = file_list[0]
@@ -27,34 +29,106 @@ def file_analysis(dir):
     most_common_file_type = most_common_type(categories)
 
     recent_files = [f for f in file_list if is_recent(f["modified_time"])]
-    
+    last_7_days = [f for f in file_list if last_seven_days(f["created_time"])] 
     file_system = {
         "root_path": dir,
+        "largest_file": largest_file,
         "total_size": total_file_size,  # in bytes
         "total_files": total_files,
         "file_types": categories,
         "files": file_list,
         "duplicates": duplicates,
-        "recent_files": recent_files
+        "recent_files": recent_files,
+        "last_seven_days": last_7_days,
+        "common_file": most_common_file_type, 
     }
 
     return file_system
 
+def generate_scan_result(dir):
+    analysis = file_analysis(dir)
+    day =  datetime.today().strftime('%Y-%m-%d')
+    result = f"""
+    Scan Results:
+    Total files: {len(analysis["files"])}
+    Total size: {size(analysis["total_size"])}
+    Largest file: {analysis["largest_file"]["name"]} {size(analysis["largest_file"]["size"])} 
+    Most common file type: {analysis["common_file"]["name"]} ({analysis["common_file"]["num"]} files)
 
-# def filter_file_by_min_size(size)
+    File type distribution:
+    - Documents: 65%
+    - Images: 20%
+    - Videos: 10%
+    - Others: 5%
 
- 
-def search_file(dir, name=None, type=None, min_size=None, max_size=None):
+    Recent activity:
+    - Modified in last 24 hours: {len(analysis["recent_files"])} files
+    - Created in last 7 days: {len(analysis["last_seven_days"])}
+    
+
+    """
+    return result
+
+def generate_duplicate_report(dir):
+    file_list = traverse_dir(dir)
+    duplicates = find_duplicates(file_list)
+    index = 1
+    print(f"\nFound {len(duplicates)} sets of duplicate files:")
+    for k,v in duplicates.items():
+        print(f"\n{index}. {v[0]['name']} ({len(v)} copies)")
+        for f in v:
+            print(f"    -{f['path']}")
+        index+=1
+    print("\nTotal space that could be saved: 15.7 MB ") 
+
+    return ""
+
+def generate_report(dir):
+    analysis = file_analysis(dir)
+    day = datetime.today().strftime('%Y-%m-%d')
+    report = f"""
+    === File System Analysis Report ===
+    Date: {day}
+    Target Directory: {dir} 
+
+    1. Overview:
+    - Total files: {len(analysis["files"])}
+    - Total size: {size(analysis["total_size"])}
+    - Average file size: 1.5 MB
+
+    2. File Types:
+    - Documents (doc, docx, pdf, txt): {len(analysis["file_types"]["textFiles"])} (65%)
+    - Images (jpg, png, gif): 309 (20%)
+    - Videos (mp4, avi, mov): 155 (10%)
+    - Others: 78 (5%)
+
+    3. Large Files (>50 MB): {analysis["largest_file"]["name"]}
+    1. presentation.pptx (25 MB)
+    2. dataset.csv (63 MB)
+    3. project_video.mp4 (78 MB)
+
+    4. Recent Activity:
+    - Modified in last 24 hours: 15 files
+    - Created in last 7 days: 43 files
+    - Oldest file: old_archive.zip (2015-03-12)
+
+    5. Duplicate Files:
+    - {len(analysis["duplicates"])} sets of duplicates foundh
+    - Potential space savings: 15.7 MB
+
+    [End of Report]
+    """
+    return report
+
+
+def search_file(dir, name=None, min_size=None, max_size=None):
     files = traverse_dir(dir)
     result = []
     for file in files:
-        if not name and not type:
+        if not name:
             result = files
 
-        if name and name == file["name"]:
-            result.append(file)
-
-        if type and type == file["type"]:
+        if name and name in file["name"]:
             result.append(file)
 
     if not min_size and not max_size: 

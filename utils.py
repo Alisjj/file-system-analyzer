@@ -1,4 +1,6 @@
 import os
+import time
+import sys
 import hashlib
 from pathlib import Path
 from datetime import timezone, datetime, timedelta
@@ -22,6 +24,44 @@ unidentifiable = 'unidentifiableFiles'
 allcats = [text,image,development,spreadsheet,system,executable,archive,backup,audio,database,presentation,video,bookmark,pim,shortcut]
 unidentifiable = "unknown"
 
+report = """
+=== File System Analysis Report ===
+Date: 2024-08-07
+Target Directory: /home/user/documents
+
+1. Overview:
+   - Total files: 1,547
+   - Total size: 2.3 GB
+   - Average file size: 1.5 MB
+
+2. File Types:
+   - Documents (doc, docx, pdf, txt): 1,005 (65%)
+   - Images (jpg, png, gif): 309 (20%)
+   - Videos (mp4, avi, mov): 155 (10%)
+   - Others: 78 (5%)
+
+3. Large Files (>50 MB):
+   1. presentation.pptx (25 MB)
+   2. dataset.csv (63 MB)
+   3. project_video.mp4 (78 MB)
+
+4. Recent Activity:
+   - Modified in last 24 hours: 15 files
+   - Created in last 7 days: 43 files
+   - Oldest file: old_archive.zip (2015-03-12)
+
+5. Duplicate Files:
+   - 7 sets of duplicates found
+   - Potential space savings: 15.7 MB
+
+6. Recommendations:
+   - Consider archiving files not accessed in over a year
+   - Review and remove duplicate files to save 15.7 MB
+   - Large video files may be candidates for compression
+
+[End of Report]
+"""
+
 def traverse_dir(dir, file_list=None):
     dir = Path(dir)
     if file_list is None:
@@ -38,6 +78,7 @@ def traverse_dir(dir, file_list=None):
         traverse_dir(os.path.join(dir, d), file_list)
 
     return file_list
+
 
 
 
@@ -62,7 +103,13 @@ def get_meta_data(file):
 
 def is_recent(timestamp):
     today = datetime.now()
+    return today - timestamp < timedelta(days=1)
+
+def last_seven_days(timestamp):
+    today = datetime.now()
     return today - timestamp < timedelta(days=7)
+
+
 
 
 def categorize(extension):
@@ -77,32 +124,20 @@ def categorize(extension):
 def categorize_file_type(file_list):
     category = {}
     for file in file_list:
-        cat = categorize(file["type"])
-        if not cat in category:
-            category[cat] = [file["path"]]
+        if file["extension"] not in category:
+            category[file["extension"]] = [file["path"]]
             continue
-        category[cat].append(file["path"])
+        category[file["extension"]].append(file["path"])
     return category
 
 def find_duplicates(file_list):
     duplicates = {}
 
     for file in file_list:
-        if not file["hash"] in duplicates:
-            duplicates[file["hash"]] = [file["path"]]
+        if file["hash"] not in duplicates:
+            duplicates[file["hash"]] = [file]
             continue
-        duplicates[file["hash"]].append(file["path"])
-    return duplicates
+        duplicates[file["hash"]].append(file)
+    
+    return {k: v for k, v in duplicates.items() if len(v) >= 2}
 
-
-def search_file(dir, name=None, type=None, size=None, date=None):
-    files = traverse_dir(dir)
-    result = []
-    for file in files:
-        if name and name == file["name"]:
-            result.append(file["path"])
-
-        if type and type == file["type"]:
-            result.append(file["type"])
-
-    return result

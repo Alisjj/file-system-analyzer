@@ -83,44 +83,6 @@ def generate_duplicate_report(dir):
 
     return ""
 
-def generate_report(dir):
-    analysis = file_analysis(dir)
-    day = datetime.today().strftime('%Y-%m-%d')
-    report = f"""
-    === File System Analysis Report ===
-    Date: {day}
-    Target Directory: {dir} 
-
-    1. Overview:
-    - Total files: {len(analysis["files"])}
-    - Total size: {size(analysis["total_size"])}
-    - Average file size: 1.5 MB
-
-    2. File Types:
-    - Documents (doc, docx, pdf, txt): {len(analysis["file_types"]["textFiles"])} (65%)
-    - Images (jpg, png, gif): 309 (20%)
-    - Videos (mp4, avi, mov): 155 (10%)
-    - Others: 78 (5%)
-
-    3. Large Files (>50 MB): {analysis["largest_file"]["name"]}
-    1. presentation.pptx (25 MB)
-    2. dataset.csv (63 MB)
-    3. project_video.mp4 (78 MB)
-
-    4. Recent Activity:
-    - Modified in last 24 hours: 15 files
-    - Created in last 7 days: 43 files
-    - Oldest file: old_archive.zip (2015-03-12)
-
-    5. Duplicate Files:
-    - {len(analysis["duplicates"])} sets of duplicates foundh
-    - Potential space savings: 15.7 MB
-
-    [End of Report]
-    """
-    return report
-
-
 def search_file(dir, name=None, min_size=None, max_size=None):
     files, _ = traverse_dir(dir)
     result = []

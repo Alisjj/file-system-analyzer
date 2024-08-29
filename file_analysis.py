@@ -73,13 +73,17 @@ def generate_duplicate_report(dir):
     file_list, _ = traverse_dir(dir)
     duplicates = find_duplicates(file_list)
     index = 1
+    total_size_saved = 0
+
     print(f"\nFound {len(duplicates)} sets of duplicate files:")
+    
     for k,v in duplicates.items():
         print(f"\n{index}. {v[0]['name']} ({len(v)} copies)")
         for f in v:
             print(f"    -{f['path']}")
+        total_size_saved += sum(f['size'] for f in v[1:])
         index+=1
-    print("\nTotal space that could be saved: 15.7 MB ") 
+    print(f"\nTotal space that could be saved: {size(total_size_saved)} ") 
 
     return ""
 

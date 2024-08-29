@@ -5,6 +5,14 @@ import hashlib
 from pathlib import Path
 from datetime import timezone, datetime, timedelta
 
+
+PIPE = "│"  
+ELBOW = "└──"  
+TEE = "├──"  
+PIPE_PREFIX = "│   "  
+SPACE_PREFIX = "    "  
+
+
 text = ['textFiles', 'doc', 'docx', 'docm', 'odt', 'pdf', 'txt', 'rtf', 'pages', 'pfb', 'mobi', 'chm', 'tex', 'bib', 'dvi', 'abw', 'text', 'epub', 'nfo', 'log', 'log1', 'log2', 'wks', 'wps', 'wpd', 'emlx', 'utf8', 'ichat', 'asc', 'ott', 'fra', 'opf']
 image = ['imageFiles', 'img','jpg', 'jpeg', 'png', 'png0', 'ai', 'cr2', 'ico', 'icon', 'jfif', 'tiff', 'tif', 'gif', 'bmp', 'odg', 'djvu', 'odg', 'ai', 'fla', 'pic', 'ps', 'psb', 'svg', 'dds', 'hdr', 'ithmb', 'rds', 'heic', 'aae', 'apalbum', 'apfolder', 'xmp', 'dng', 'px', 'catalog', 'ita', 'photoscachefile', 'visual', 'shape', 'appicon', 'icns']
 development = ['devFiles', 'py', 'h', 'm', 'jar', 'cs', 'c', 'c#', 'cpp', 'c++', 'class', 'java', 'php', 'phps', 'php5', 'htm', 'html', 'css', 'xml', '3mf', 'o', 'obj', 'json', 'jsonp', 'blg', 'bbl', 'j', 'jav', 'bash', 'bsh', 'sh', 'rb', 'vb', 'vbscript', 'vbs', 'vhd', 'vmwarevm', 'js', 'jsp', 'xhtml','md5', 'nib', 'strings', 'frm', 'myd', 'myi', 'props', 'vcxproj', 'vs', 'lst', 'sol', 'vbox', 'vbox-prev', 'pch', 'pdb', 'lib', 'nas', 'assets', 'sql', 'sqlite-wal', 'rss', 'swift', 'xsl', 'manifest', 'up_meta', 'down_meta', 'woff', 'dist', 'sublime-snippet', 'd', 'ashx', 'tpm', 'dsw', 'hpp', 'tga', 'kf', 'rq', 'rdf', 'ttl', 'pyc', 'pyo', 's', 'lua', 'vim', 'p', 'dashtoc', 'org%2f2000%2fsvg%22%20width%3d%2232%22', 'md', 'mo', 'make', 'cmake', 'makefile', 'options', 'def', 'cc', 'f90', 'dcp', 'cxx', 'seto', 'f', 'simt']
@@ -62,22 +70,35 @@ Target Directory: /home/user/documents
 [End of Report]
 """
 
-def traverse_dir(dir, file_list=None):
+
+def traverse_dir(dir, file_list=None, tree=None, prefix=""):
     dir = Path(dir)
+    
     if file_list is None:
         file_list = []
 
-    if not os.path.exists(dir):
-        raise Exception("Error: Directory Does not exist")
-    source_list = os.listdir(dir)
-    for d in source_list:
-        if os.path.isfile(os.path.join(dir, d)):
-            file = get_meta_data(os.path.join(dir, d))
-            file_list.append(file)
-            continue
-        traverse_dir(os.path.join(dir, d), file_list)
+    if tree is None:
+        tree = []
 
-    return file_list
+    if not os.path.exists(dir):
+        raise Exception("Error: Directory does not exist")
+
+    entries = sorted(dir.iterdir(), key=lambda entry: entry.is_file())
+    entries_count = len(entries)
+
+    for index, entry in enumerate(entries):
+        connector = ELBOW if index == entries_count - 1 else TEE
+        
+        if entry.is_file():
+            file = get_meta_data(entry)
+            file_list.append(file)
+            tree.append(f"{prefix}{connector}{entry.name}")
+        else:
+            tree.append(f"{prefix}{connector}{entry.name}{os.sep}")
+            new_prefix = prefix + (PIPE_PREFIX if index != entries_count - 1 else SPACE_PREFIX)
+            traverse_dir(entry, file_list, tree, new_prefix)
+
+    return file_list, tree
 
 
 

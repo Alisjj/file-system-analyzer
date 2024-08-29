@@ -12,7 +12,7 @@ def most_common_type(categories):
     return {"name": cat, "num": len(categories[cat])}
 
 def file_analysis(dir):
-    file_list = traverse_dir(dir)
+    file_list, _ = traverse_dir(dir)
     categories = categorize_file_type(file_list)
     
     total_files = len(file_list)
@@ -70,7 +70,7 @@ def generate_scan_result(dir):
     return result
 
 def generate_duplicate_report(dir):
-    file_list = traverse_dir(dir)
+    file_list, _ = traverse_dir(dir)
     duplicates = find_duplicates(file_list)
     index = 1
     print(f"\nFound {len(duplicates)} sets of duplicate files:")
@@ -122,7 +122,7 @@ def generate_report(dir):
 
 
 def search_file(dir, name=None, min_size=None, max_size=None):
-    files = traverse_dir(dir)
+    files, _ = traverse_dir(dir)
     result = []
     for file in files:
         if not name:

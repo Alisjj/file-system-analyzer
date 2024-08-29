@@ -19,3 +19,10 @@ Clone this repository to your local machine:
 ```bash
 git clone https://github.com/alisjjw/file-system-analyzer.git
 cd file-system-analyzer
+```
+
+## How It Works
+
+- Scan a Directory: python main.py --scan /path/to/directory
+- Find Duplicates: python main.py --duplicates /path/to/directory
+- Search for Files: python main.py /path/to/directory --search ".pdf" --size-gt 1000
